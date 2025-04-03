@@ -25,7 +25,7 @@ public Plugin myinfo =
 	name = "Show Player Clip Brushes",
 	author = "GAMMA CASE",
 	description = "Shows player clip brushes on map.",
-	version = "1.1.2",
+	version = "1.1.3",
 	url = "https://github.com/GAMMACASE/ShowPlayerClips"
 };
 
@@ -65,6 +65,11 @@ ConVar gCvarCommands,
 ArrayList gClientsToDraw;
 
 VertsList gFinalVerts[PVIS_COUNT];
+
+//TElimit bytepatch data
+int gTELimitData;
+Address gTELimitAddress;
+//==-
 
 //Linux only
 CCollisionBSPData gpBSPData;
@@ -116,6 +121,9 @@ public void OnPluginStart()
 	SetupDhooks(gconf);
 	SetupSDKCalls(gconf);
 	
+	if(gEngineVer == Engine_CSS)
+		BytePatchTELimit(gconf);
+	
 	if(gOSType == OSLinux)
 		GetCollisionBSPData(gconf);
 	
@@ -126,6 +134,14 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 {
 	gLate = late;
 	return APLRes_Success;
+}
+
+public void OnPluginEnd()
+{
+	if(gTELimitAddress == Address_Null)
+		return;
+	
+	StoreToAddress(gTELimitAddress, gTELimitData, NumberType_Int8);
 }
 
 public void OnConfigsExecuted()
@@ -566,6 +582,20 @@ void GetCollisionBSPData(Handle gconf)
 {
 	gpBSPData = CCollisionBSPData(GameConfGetAddress(gconf, "g_BSPData"));
 	ASSERT_MSG(gpBSPData.Address != Address_Null, "Invalid gpBSPData retrieved from \"g_BSPData\" address.");
+}
+
+stock void BytePatchTELimit(Handle gconf)
+{
+	//TELimit
+	gTELimitAddress = GameConfGetAddress(gconf, "TELimit");
+	ASSERT_MSG(gTELimitAddress != Address_Null, "Failed to get addres of \"TELimit\".");
+	
+	gTELimitData = LoadFromAddress(gTELimitAddress, NumberType_Int8);
+	
+	if(gOSType == OSWindows)
+		StoreToAddress(gTELimitAddress, 0xFF, NumberType_Int8);
+	else if(gOSType == OSLinux)
+		StoreToAddress(gTELimitAddress, 0x02, NumberType_Int8);
 }
 
 void RecomputeClipbrushes()
