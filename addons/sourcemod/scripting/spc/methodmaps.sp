@@ -840,7 +840,9 @@ enum CCollisionBSPData_members
 	CCollisionBSPData_numbrushes,
 	CCollisionBSPData_map_brushes,
 	CCollisionBSPData_numdisplist,
-	CCollisionBSPData_map_dispList
+	CCollisionBSPData_map_dispList,
+	CCollisionBSPData_map_surfaces
+	
 	//...
 };
 static int CCollisionBSPData_offsets[CCollisionBSPData_members];
@@ -923,6 +925,22 @@ methodmap CCollisionBSPData < AddressBase
 		public get() { return view_as<CRangeValidatedArray>(this.Address + CCollisionBSPData_offsets[CCollisionBSPData_map_brushes]); }
 	}
 	
+	property CRangeValidatedArray map_surfaces
+	{
+		public get() { return view_as<CRangeValidatedArray>(this.Address + CCollisionBSPData_offsets[CCollisionBSPData_map_surfaces]); }
+	}
+	
+	public int getSurfaceAtIndex(int index)
+	{ 
+		Address map_surfaces = LoadFromAddress(view_as<Address>(this.Address + 588), NumberType_Int32);
+		return LoadFromAddress(view_as<Address>(map_surfaces + (8*index)), NumberType_Int32);
+	}
+	
+	public int getSurfaceFlags(int index)
+	{
+		Address surface = view_as<Address>(this.getSurfaceAtIndex(index));
+		return LoadFromAddress(view_as<Address>(surface + 6), NumberType_Int16);
+	}
 	//...
 }
 
@@ -1025,6 +1043,8 @@ void RetrieveOffsets(Handle gconf)
 			CCollisionBSPData_offsets[CCollisionBSPData_numbrushes] = StringToInt(buff);
 			GameConfGetKeyValue(gconf, "CCollisionBSPData::map_brushes", buff, sizeof(buff));
 			CCollisionBSPData_offsets[CCollisionBSPData_map_brushes] = StringToInt(buff);
+			GameConfGetKeyValue(gconf, "CCollisionBSPData::map_surfaces", buff, sizeof(buff));
+			CCollisionBSPData_offsets[CCollisionBSPData_map_surfaces] = StringToInt(buff);
 		}
 	}
 	else if(gOSType == OSLinux)
@@ -1132,6 +1152,8 @@ void RetrieveOffsets(Handle gconf)
 		CCollisionBSPData_offsets[CCollisionBSPData_numbrushes] = StringToInt(buff);
 		GameConfGetKeyValue(gconf, "CCollisionBSPData::map_brushes", buff, sizeof(buff));
 		CCollisionBSPData_offsets[CCollisionBSPData_map_brushes] = StringToInt(buff);
+		GameConfGetKeyValue(gconf, "CCollisionBSPData::map_surfaces", buff, sizeof(buff));
+		CCollisionBSPData_offsets[CCollisionBSPData_map_surfaces] = StringToInt(buff);
 		
 		//cplane_t
 		GameConfGetKeyValue(gconf, "cplane_t::normal", buff, sizeof(buff));
