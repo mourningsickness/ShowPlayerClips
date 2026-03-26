@@ -464,12 +464,12 @@ public Action SM_ShowClipBrushes(int client, int args)
 	if(idx != -1)
 	{
 		gClientsToDraw.Erase(idx);
-		Shavit_PrintToChat(client, "Playerclips now %sdisabled", g_sChatStrings.sVariable);
+		Shavit_PrintToChat(client, "Playerclips and NoDraw now %sdisabled", g_sChatStrings.sWarning);
 	}
 	else
 	{
 		gClientsToDraw.Push(GetClientUserId(client));
-		Shavit_PrintToChat(client, "Playerclips now %senabled", g_sChatStrings.sVariable);
+		Shavit_PrintToChat(client, "Playerclips and NoDraw now %senabled", g_sChatStrings.sVariable);
 	}
 	
 	SetClientCookie(client, ghShowCookie, idx == -1 ? "1" : "0");
@@ -481,7 +481,7 @@ void GetOSType(Handle gconf)
 {
 	gOSType = view_as<OSType>(GameConfGetOffset(gconf, "WinOrLin"));
 	
-	ASSERT_MSG(gOSType != OSUnknown, "Failed to get OS type. Make sure gamedata file is in gamedata folder, and you are using windows or linux.");
+	if(gOSType == OSUnknown){ SetFailState("Failed to get OS type. Make sure gamedata file is in gamedata folder, and you are using windows or linux.");}
 }
 
 void SetupDhooks(Handle gconf)
@@ -493,7 +493,7 @@ void SetupDhooks(Handle gconf)
 		
 		DHookAddParam(dhook, HookParamType_Int, .custom_register = (gEngineVer == Engine_CSGO ? DHookRegister_ECX : DHookRegister_Default));
 		
-		ASSERT_MSG(DHookEnableDetour(dhook, false, DrawLeafVis_CallBack), "Failed to enable detour for \"DrawLeafVis\".");
+		if(!DHookEnableDetour(dhook, false, DrawLeafVis_CallBack)) SetFailState("Failed to enable detour for \"DrawLeafVis\".");
 		
 		if(gEngineVer == Engine_CSS)
 		{
@@ -504,7 +504,7 @@ void SetupDhooks(Handle gconf)
 			DHookAddParam(dhook2, HookParamType_Int);
 			DHookAddParam(dhook2, HookParamType_Int);
 			
-			ASSERT_MSG(DHookEnableDetour(dhook2, false, FindMinBrush_CallBack), "Failed to enable detour for \"FindMinBrush\".");
+			if(!DHookEnableDetour(dhook2, false, FindMinBrush_CallBack)) SetFailState("Failed to enable detour for \"FindMinBrush\".");
 		}
 	}
 }
@@ -515,26 +515,26 @@ void SetupSDKCalls(Handle gconf)
 	{
 		//LeafVisDraw
 		StartPrepSDKCall(SDKCall_Static);
-		ASSERT_MSG(PrepSDKCall_SetFromConf(gconf, SDKConf_Signature, "LeafVisDraw"), "Failed to get \"LeafVisDraw\" signature.");
+		if(!PrepSDKCall_SetFromConf(gconf, SDKConf_Signature, "LeafVisDraw")) SetFailState("Failed to get \"LeafVisDraw\" signature.");
 		
 		ghLeafVisDraw = EndPrepSDKCall();
-		ASSERT_MSG(ghLeafVisDraw, "Failed to create SDKCall to \"LeafVisDraw\".");
+		if(!ghLeafVisDraw) SetFailState("Failed to create SDKCall to \"LeafVisDraw\".");
 		
 		
 		//RecomputeClipbrushes
 		StartPrepSDKCall(SDKCall_Static);
-		ASSERT_MSG(PrepSDKCall_SetFromConf(gconf, SDKConf_Signature, "RecomputeClipbrushes"), "Failed to get \"RecomputeClipbrushes\" signature.");
+		if(!PrepSDKCall_SetFromConf(gconf, SDKConf_Signature, "RecomputeClipbrushes")) SetFailState("Failed to get \"RecomputeClipbrushes\" signature.");
 		
 		PrepSDKCall_AddParameter(SDKType_Bool, SDKPass_Plain);
 		
 		ghRecomputeClipbrushes = EndPrepSDKCall();
-		ASSERT_MSG(ghRecomputeClipbrushes, "Failed to create SDKCall to \"RecomputeClipbrushes\".");
+		if(!ghRecomputeClipbrushes) SetFailState("Failed to create SDKCall to \"RecomputeClipbrushes\".");
 	}
 	else if(gOSType == OSLinux)
 	{	
 		//PolyFromPlane
 		StartPrepSDKCall(SDKCall_Static);
-		ASSERT_MSG(PrepSDKCall_SetFromConf(gconf, SDKConf_Signature, "PolyFromPlane"), "Failed to get \"PolyFromPlane\" signature.");
+		if(!PrepSDKCall_SetFromConf(gconf, SDKConf_Signature, "PolyFromPlane")) SetFailState("Failed to get \"PolyFromPlane\" signature.");
 		
 		PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
 		PrepSDKCall_AddParameter(SDKType_Vector, SDKPass_ByRef, .encflags = VENCODE_FLAG_COPYBACK);
@@ -544,11 +544,11 @@ void SetupSDKCalls(Handle gconf)
 		PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
 		
 		ghPolyFromPlane = EndPrepSDKCall();
-		ASSERT_MSG(ghPolyFromPlane, "Failed to create SDKCall to \"PolyFromPlane\".");
+		if(!ghPolyFromPlane) SetFailState("Failed to create SDKCall to \"PolyFromPlane\".");
 		
 		//ClipPolyToPlane
 		StartPrepSDKCall(SDKCall_Static);
-		ASSERT_MSG(PrepSDKCall_SetFromConf(gconf, SDKConf_Signature, "ClipPolyToPlane"), "Failed to get \"ClipPolyToPlane\" signature.");
+		if(!PrepSDKCall_SetFromConf(gconf, SDKConf_Signature, "ClipPolyToPlane")) SetFailState("Failed to get \"ClipPolyToPlane\" signature.");
 		
 		PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
 		PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
@@ -560,11 +560,11 @@ void SetupSDKCalls(Handle gconf)
 		PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
 		
 		ghClipPolyToPlane = EndPrepSDKCall();
-		ASSERT_MSG(ghClipPolyToPlane, "Failed to create SDKCall to \"ClipPolyToPlane\".");
+		if(!ghClipPolyToPlane) SetFailState("Failed to create SDKCall to \"ClipPolyToPlane\".");
 		
 		//malloc
 		StartPrepSDKCall(SDKCall_Static);
-		ASSERT_MSG(PrepSDKCall_SetFromConf(gconf, SDKConf_Signature, "malloc"), "Failed to get \"malloc\" signature.");
+		if(!PrepSDKCall_SetFromConf(gconf, SDKConf_Signature, "malloc")) SetFailState("Failed to get \"malloc\" signature.");
 		
 		PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
 		if(gEngineVer == Engine_CSS)
@@ -573,32 +573,32 @@ void SetupSDKCalls(Handle gconf)
 		PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
 		
 		ghMalloc = EndPrepSDKCall();
-		ASSERT_MSG(ghMalloc, "Failed to create SDKCall to \"malloc\".");
+		if(!ghMalloc) SetFailState("Failed to create SDKCall to \"malloc\".");
 		
 		//free
 		StartPrepSDKCall(SDKCall_Static);
-		ASSERT_MSG(PrepSDKCall_SetFromConf(gconf, SDKConf_Signature, "free"), "Failed to get \"free\" signature.");
+		if(!PrepSDKCall_SetFromConf(gconf, SDKConf_Signature, "free")) SetFailState("Failed to get \"free\" signature.");
 		
 		PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
 		if(gEngineVer == Engine_CSS)
 			PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
 		
 		ghFree = EndPrepSDKCall();
-		ASSERT_MSG(ghFree, "Failed to create SDKCall to \"free\".");
+		if(!ghFree) SetFailState("Failed to create SDKCall to \"free\".");
 	}
 }
 
 void GetCollisionBSPData(Handle gconf)
 {
 	gpBSPData = CCollisionBSPData(GameConfGetAddress(gconf, "g_BSPData"));
-	ASSERT_MSG(gpBSPData.Address != Address_Null, "Invalid gpBSPData retrieved from \"g_BSPData\" address.");
+	if(gpBSPData.Address == Address_Null) SetFailState("Invalid gpBSPData retrieved from \"g_BSPData\" address.");
 }
 
 stock void BytePatchTELimit(Handle gconf)
 {
 	//TELimit
 	gTELimitAddress = GameConfGetAddress(gconf, "TELimit");
-	ASSERT_MSG(gTELimitAddress != Address_Null, "Failed to get addres of \"TELimit\".");
+	if(gTELimitAddress == Address_Null) SetFailState("Failed to get addres of \"TELimit\".");
 	
 	gTELimitData = LoadFromAddress(gTELimitAddress, NumberType_Int8);
 	
@@ -1171,7 +1171,7 @@ stock Address Malloc(int size)
 
 stock void Free(Address addr)
 {
-	ASSERT_MSG(addr != Address_Null, "Null address passed to free function.");
+	if(addr == Address_Null) SetFailState("Null address passed to free function.");
 	
 	if(gEngineVer == Engine_CSGO)
 		SDKCall(ghFree, addr);
