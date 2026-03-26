@@ -5,6 +5,7 @@
 #include "dhooks"
 #include "dhooks_macros"
 #include "regex"
+#include "shavit"
 
 #define SNAME "[ShowPlayerClips] "
 #define GAMECONF_FILENAME "showplayerclips.games"
@@ -19,6 +20,8 @@
 
 #define MAX_LEAF_PVERTS 128
 #define NUMSIDES_BOXBRUSH 0xFFFF
+
+chatstrings_t g_sChatStrings;
 
 public Plugin myinfo = 
 {
@@ -107,7 +110,7 @@ public void OnPluginStart()
 	//gCvarDynamicTimer = CreateConVar("spc_beams_refreshtime_dynamic", "0", "Use dynamically calculated refresh time, may speed up showing beams when toggling command.", .hasMin = true, .hasMax = true, .max = 1.0);
 	AutoExecConfig();
 	
-	LoadTranslations(TRANSLATE_FILENAME);
+	//LoadTranslations(TRANSLATE_FILENAME);
 	
 	gClientsToDraw = new ArrayList();
 	
@@ -128,6 +131,13 @@ public void OnPluginStart()
 		GetCollisionBSPData(gconf);
 	
 	delete gconf;
+	
+	Shavit_OnChatConfigLoaded();
+}
+
+public void Shavit_OnChatConfigLoaded()
+{
+	Shavit_GetChatStringsStruct(g_sChatStrings);
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
@@ -454,12 +464,12 @@ public Action SM_ShowClipBrushes(int client, int args)
 	if(idx != -1)
 	{
 		gClientsToDraw.Erase(idx);
-		ReplyToCommand(client, "%T", "playerclips_disabled", client);
+		Shavit_PrintToChat(client, "Playerclips now %sdisabled", g_sChatStrings.sVariable);
 	}
 	else
 	{
 		gClientsToDraw.Push(GetClientUserId(client));
-		ReplyToCommand(client, "%T", "playerclips_enabled", client);
+		Shavit_PrintToChat(client, "Playerclips now %senabled", g_sChatStrings.sVariable);
 	}
 	
 	SetClientCookie(client, ghShowCookie, idx == -1 ? "1" : "0");
