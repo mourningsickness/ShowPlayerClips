@@ -92,6 +92,7 @@
 			"CCollisionBSPData::map_cmodels"	"184"
 			"CCollisionBSPData::numbrushes"		"192"
 			"CCollisionBSPData::map_brushes"	"196"
+			"CCollisionBSPData::map_surfaces"	"588"
 			//...
 		}
 		
