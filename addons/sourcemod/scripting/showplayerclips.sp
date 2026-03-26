@@ -11,7 +11,7 @@
 #define TRANSLATE_FILENAME "showplayerclips.phrases"
 
 #define MAX_TEMPENTS_SEND (255 - 24)
-#define PVIS_COUNT 3
+#define PVIS_COUNT 4
 #define TEMPENT_MIN_LIFETIME 1.0
 #define TEMPENT_MAX_LIFETIME 25.0
 #define INTERNAL_REFRESHTIME 0.1
@@ -24,8 +24,8 @@ public Plugin myinfo =
 {
 	name = "Show Player Clip Brushes",
 	author = "GAMMA CASE",
-	description = "Shows player clip brushes on map.",
-	version = "1.1.3",
+	description = "Shows player clip and nodraw brushes on map.",
+	version = "1.1.4",
 	url = "https://github.com/GAMMACASE/ShowPlayerClips"
 };
 
@@ -260,7 +260,7 @@ public void OnMapEnd()
 			gpVis[i] = view_as<Leafvis_t>(0);
 		
 		delete gFinalVerts[i];
-		for(int j = 0; j < sizeof(gColor); j++)
+		for(int j = 0; j < sizeof(gColor[]); j++)
 			gColor[i][j] = 0;
 	}
 	
@@ -600,7 +600,7 @@ stock void BytePatchTELimit(Handle gconf)
 
 void RecomputeClipbrushes()
 {
-	int ibrush, contents[PVIS_COUNT] = {CONTENTS_PLAYERCLIP|CONTENTS_MONSTERCLIP, CONTENTS_MONSTERCLIP, CONTENTS_PLAYERCLIP};
+	int ibrush, contents[PVIS_COUNT] = {CONTENTS_PLAYERCLIP|CONTENTS_MONSTERCLIP, CONTENTS_MONSTERCLIP, CONTENTS_PLAYERCLIP, SURF_NODRAW};
 	
 	ArrayList planeList = new ArrayList(4);
 	float normal[3], mins[3], maxs[3];
@@ -621,34 +621,93 @@ void RecomputeClipbrushes()
 		vertCountList.Clear();
 		
 		gColor[j][0] = (j != 1 ? 255 : 125);
-		gColor[j][1] = 0;
-		gColor[j][2] = (j != 0 ? 255 : 0);
+		gColor[j][1] = (j < 3 ? 0 : 255);
+		gColor[j][2] = (0 < j < 3 ? 255 : 0);
 		gColor[j][3] = gCvarBeamAlpha.IntValue;
 		
 		for(ibrush = 0; ibrush < lastBrush; ibrush++)
 		{
 			pBrush = view_as<Cbrush_t>(gpBSPData.map_brushes.Get(ibrush, Cbrush_t.Size()));
-			if((pBrush.contents & (CONTENTS_PLAYERCLIP | CONTENTS_MONSTERCLIP)) == contents[j])
+			
+			if(j < 3)
 			{
-				planeList.Clear();
+				if((pBrush.contents & (CONTENTS_PLAYERCLIP | CONTENTS_MONSTERCLIP)) == contents[j])
+				{
+					planeList.Clear();
+					
+					if(pBrush.IsBox())
+					{
+						pBox = view_as<Cboxbrush_t>(gpBSPData.map_boxbrushes.Get(pBrush.GetBox(), Cboxbrush_t.Size()));
+						pBox.mins.ToArray(mins);
+						pBox.maxs.ToArray(maxs);
+						
+						for(int i = 0; i < 3; i++)
+						{
+							normal[0] = 0.0;
+							normal[1] = 0.0;
+							normal[2] = 0.0;
+							
+							normal[i] = 1.0;
+							
+							AddPlaneToList(planeList, normal, maxs[i], true);
+							NegateVector(normal);
+							AddPlaneToList(planeList, normal, -mins[i], true);
+						}
+					}
+					else
+					{
+						for(int i = 0; i < pBrush.numsides; i++)
+						{
+							pSide = view_as<Cbrushside_t>(gpBSPData.map_brushsides.Get(pBrush.firstbrushside + i, Cbrushside_t.Size()));
+							
+							if(pSide.bBevel == 1)
+								continue;
+							
+							pSide.plane.normal.ToArray(normal);
+							
+							AddPlaneToList(planeList, normal, pSide.plane.dist, true);
+						}
+					}
+					
+					CSGPlaneList(planeList, vertsList, vertCountList);
+				}
+			}
+			else
+			{
+				if((pBrush.contents & (CONTENTS_PLAYERCLIP)) || (pBrush.contents & (CONTENTS_MONSTERCLIP)))
+					continue;
+				if(!(pBrush.contents & (MASK_PLAYERSOLID)))
+					continue;
+				if(pBrush.contents & (MASK_VISIBLE)) //unfortunately this doesn't show the brushes like on bhop_gnite.. as they are CONTENTS_OPAQUE.. and if you display those, it displays all sorts of other brush geometry in maps ):
+					continue;
 				
 				if(pBrush.IsBox())
 				{
 					pBox = view_as<Cboxbrush_t>(gpBSPData.map_boxbrushes.Get(pBrush.GetBox(), Cboxbrush_t.Size()));
-					pBox.mins.ToArray(mins);
-					pBox.maxs.ToArray(maxs);
-					
-					for(int i = 0; i < 3; i++)
+					int iSurfaceIndex[6];
+					pBox.surfaceIndex(iSurfaceIndex);
+					for(int k = 0; k < 6; k++)
 					{
-						normal[0] = 0.0;
-						normal[1] = 0.0;
-						normal[2] = 0.0;
-						
-						normal[i] = 1.0;
-						
-						AddPlaneToList(planeList, normal, maxs[i], true);
-						NegateVector(normal);
-						AddPlaneToList(planeList, normal, -mins[i], true);
+						int flags = gpBSPData.getSurfaceFlags(iSurfaceIndex[k]);
+						if((flags & (SURF_NODRAW)) == 0)
+						{
+							planeList.Clear();
+							pBox.mins.ToArray(mins);
+							pBox.maxs.ToArray(maxs);
+							
+							for(int i = 0; i < 3; i++)
+							{
+								normal[0] = 0.0;
+								normal[1] = 0.0;
+								normal[2] = 0.0;
+								
+								normal[i] = 1.0;
+								
+								AddPlaneToList(planeList, normal, maxs[i], true);
+								NegateVector(normal);
+								AddPlaneToList(planeList, normal, -mins[i], true);
+							}
+						}
 					}
 				}
 				else
@@ -656,13 +715,18 @@ void RecomputeClipbrushes()
 					for(int i = 0; i < pBrush.numsides; i++)
 					{
 						pSide = view_as<Cbrushside_t>(gpBSPData.map_brushsides.Get(pBrush.firstbrushside + i, Cbrushside_t.Size()));
-						
-						if(pSide.bBevel == 1)
-							continue;
-						
-						pSide.plane.normal.ToArray(normal);
-						
-						AddPlaneToList(planeList, normal, pSide.plane.dist, true);
+						int flags = gpBSPData.getSurfaceFlags(pSide.surfaceIndex);
+						if((flags & (SURF_NODRAW)) == 0)
+						{
+							if(pSide.bBevel == 1)
+								continue;
+							
+							planeList.Clear();
+							
+							pSide.plane.normal.ToArray(normal);
+							
+							AddPlaneToList(planeList, normal, pSide.plane.dist, true);
+						}
 					}
 				}
 				
