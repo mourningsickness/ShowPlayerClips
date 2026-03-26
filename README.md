@@ -1,12 +1,15 @@
-# ShowPlayerClips
-This plugin allows you to see clip brushes on maps, that normally you cannot see without sv_cheats enabled.
+# ShowPlayerClips (with nodraw!)
+This plugin allows you to see playerclip and nodraw brushes on maps that normally you cannot see.
 
 ## Basic usage and examples:
 
-To toggle clip brushes use one of the commands specified in ``spc_commands`` cvar. It will display 3 types of clip brushes, red = player clip; purple = monster clip; pink = both, player and monster clip, additionally on windows in csgo you may see green ones = grenade clips, they are not in linux version though.
+To toggle clip brushes use one of the commands specified in ``spc_commands`` cvar. It will display 4 types of brushes, red = player clip; purple = monster clip; pink = both player and monster clip, yellow = nodraw (tested only on linux cs:s). Additionally on windows in csgo you may see green ones = grenade clips, they are not in the linux version though.
 
 Preview:
-![example1](https://i.imgur.com/cHI0UzY.png)
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/bf7b0f47-2f70-40f6-b345-8b4bf306abc5" />
+
+![20260326110549_1](https://github.com/user-attachments/assets/261b063f-5f16-43fa-b40f-72b43d5dbc65)
+
 
 ## Available cvars:
 
