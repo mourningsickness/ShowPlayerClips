@@ -1,7 +1,7 @@
 # ShowPlayerClips (with nodraw!)
-This plugin allows you to see playerclip and nodraw brushes on maps that normally you cannot see.
+This plugin allows you to see playerclip brushes on maps that normally you cannot see.
 
-For the nodraw/invisible/other types brush support you can use [this fork](https://github.com/KawaiiClan/ShowPlayerClips/) instead (mostly tested on CSS).
+For the nodraw/invisible/other types brush support you can use this fork instead (mostly tested on CSS).
 
 ## Basic usage and examples:
 
